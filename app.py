@@ -109,3 +109,4 @@ def chatbot():
 if "chosen_llm" in st.session_state.keys():
   show_previous_chats()
   chatbot()
+  
