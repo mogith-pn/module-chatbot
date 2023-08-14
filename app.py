@@ -8,10 +8,14 @@ from langchain import PromptTemplate, LLMChain
 from langchain.chains import ConversationChain
 from langchain.memory import ConversationBufferMemory, ChatMessageHistory
 from langchain.schema import HumanMessage, AIMessage
+import streamlit.components.v1 as components
 
 st.set_page_config(layout="wide")
-
 ClarifaiStreamlitCSS.insert_default_css(st)
+
+with open('./styles.css') as f:
+  st.markdown(f"<style>{f.read()}</style>",unsafe_allow_html=True)
+
 
 def load_pat():
   if 'CLARIFAI_PAT' not in st.secrets:
@@ -100,13 +104,16 @@ def chatbot():
     with st.chat_message("assistant"):
       with st.spinner("Thinking..."):
         response = conversation.predict(input=message, chat_history=st.session_state["chat_history"])
+        # llama response format if different. It seems like human-ai chat examples are appended after the actual response.
+        if st.session_state['chosen_llm'].find('lama') > -1:
+          response = response.split('Human:',1)[0]
         st.write(response)
-        # st.info(f"chat_history {conversation.memory}")
         message = {"role": "assistant", "content": response}
         st.session_state['chat_history'].append(message)
-
+    st.write("\n***\n")
 
 if "chosen_llm" in st.session_state.keys():
   show_previous_chats()
   chatbot()
-  
+
+
