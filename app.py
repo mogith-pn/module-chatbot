@@ -1,6 +1,6 @@
 import streamlit as st
 from clarifai.modules.css import ClarifaiStreamlitCSS
-from langchain.llms import Clarifai
+from langchain_community.llms import Clarifai
 from langchain import PromptTemplate
 from langchain.chains import ConversationChain
 from langchain.memory import ConversationBufferMemory, ChatMessageHistory
@@ -15,10 +15,13 @@ with open('./styles.css') as f:
 
 
 def load_pat():
-  if 'CLARIFAI_PAT' not in st.secrets:
-    st.error("You need to set the CLARIFAI_PAT in the secrets.")
+  query=st.experimental_get_query_params()
+  try:
+    PAT= query.get("pat", [])[0]
+  except Exception as e:
+    st.error("CLARIFAI_PAT not found")
     st.stop()
-  return st.secrets.CLARIFAI_PAT
+  return PAT
 
 
 def get_default_models():
@@ -100,13 +103,16 @@ def chatbot():
     st.session_state['chat_history'].append({"role": "user", "content": message})
     with st.chat_message("assistant"):
       with st.spinner("Thinking..."):
-        response = conversation.predict(input=message, chat_history=st.session_state["chat_history"])
-        # llama response format if different. It seems like human-ai chat examples are appended after the actual response.
-        if st.session_state['chosen_llm'].find('lama') > -1:
-          response = response.split('Human:',1)[0]
-        st.write(response)
-        message = {"role": "assistant", "content": response}
-        st.session_state['chat_history'].append(message)
+        try:
+          response = conversation.predict(input=message, chat_history=st.session_state["chat_history"])
+          # llama response format if different. It seems like human-ai chat examples are appended after the actual response.
+          if st.session_state['chosen_llm'].find('lama') > -1:
+            response = response.split('Human:',1)[0]
+          st.write(response)
+          message = {"role": "assistant", "content": response}
+          st.session_state['chat_history'].append(message)
+        except Exception as e:
+          st.error(f"Predict failed: {e}")
     st.write("\n***\n")
 
 if "chosen_llm" in st.session_state.keys():
